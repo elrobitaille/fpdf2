@@ -314,15 +314,18 @@ class RenderStyle(CoerciveEnum):
     DF = intern("DRAW_FILL")
     "Draw lines and fill areas"
 
-    TILE = intern("TILE")
-    "Apply tiling patterns"
+    TILE_STROKE = intern("TILE_STROKE")
+    "Apply tiling patterns for stroke"
 
-    SHADE = intern("SHADE")
-    "Apply shading patterns"
+    TILE_FILL = intern("TILE_FILL")
+    "Apply tiling patterns for fill"
+
+    SHADE_FILL = intern("SHADE_FILL")
+    "Apply shading patterns for fill"
 
     @property
     def operator(self):
-        return {self.D: "S", self.F: "f", self.DF: "B", self.TILE: "T", self.SHADE: "G"}[self]
+        return {self.D: "S", self.F: "f", self.DF: "B",  self.TILE_STROKE: "S", self.TILE_FILL: "f", self.SHADE_FILL: "f"}[self]
 
     @property
     def is_draw(self):
@@ -331,6 +334,14 @@ class RenderStyle(CoerciveEnum):
     @property
     def is_fill(self):
         return self in (self.F, self.DF)
+    
+    @property
+    def is_tile(self):
+        return self in (self.TILE_STROKE, self.TILE_FILL)
+
+    @property
+    def is_shade(self):
+        return self == self.SHADE_FILL
 
     @classmethod
     def coerce(cls, value):
