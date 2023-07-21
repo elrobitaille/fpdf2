@@ -314,9 +314,15 @@ class RenderStyle(CoerciveEnum):
     DF = intern("DRAW_FILL")
     "Draw lines and fill areas"
 
+    TILE = intern("TILE")
+    "Apply tiling patterns"
+
+    SHADE = intern("SHADE")
+    "Apply shading patterns"
+
     @property
     def operator(self):
-        return {self.D: "S", self.F: "f", self.DF: "B"}[self]
+        return {self.D: "S", self.F: "f", self.DF: "B", self.TILE: "T", self.SHADE: "G"}[self]
 
     @property
     def is_draw(self):
