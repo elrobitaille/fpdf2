@@ -2,6 +2,7 @@ import copy, decimal, math, re
 from collections import OrderedDict
 from contextlib import contextmanager
 from typing import Optional, NamedTuple, Union
+from enum import Enum
 
 from .enums import (
     BlendMode,
@@ -1129,6 +1130,13 @@ class GraphicsStyle:
             else:
                 setattr(new, prop, cval)
 
+        # Pattern attribute specifically
+        cval = child.pattern
+        if cval is cls.INHERIT:
+            setattr(new, "pattern", parent.pattern)
+        else:
+            setattr(new, "pattern", cval)
+
         return new
 
     def __init__(self):
@@ -1494,11 +1502,13 @@ class GraphicsStyle:
         return self._pattern  # pylint: disable=no-member
 
     @pattern.setter
-    def pattern(self, pattern: Pattern):
-        if not isinstance(pattern, Pattern) and pattern is not self.INHERIT:
-            raise TypeError(f"{pattern} is not a Pattern")
-        super().__setattr__("_pattern", pattern)
-    
+    def pattern(self, value):
+        if value is None or value is self.INHERIT:
+            super().__setattr__("_pattern", value)
+        elif isinstance(value, Pattern):
+            super().__setattr__("_pattern", value)
+        else:
+            raise TypeError(f"{value} doesn't look like a valid pattern")
 
 def _render_move(pt):
     return f"{pt.render()} m"
