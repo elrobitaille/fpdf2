@@ -329,22 +329,27 @@ class RenderStyle(CoerciveEnum):
 
     @property
     def is_draw(self):
+        """Check if the render style is related to drawing."""
         return self in (self.D, self.DF)
 
     @property
     def is_fill(self):
-        return self in (self.F, self.DF)
+        """Check if the render style is related to filling."""
+        return self in (self.F, self.DF, self.TILE_FILL, self.SHADE_FILL)
     
     @property
     def is_tile(self):
+        """Check if the render style is related to tiling."""
         return self in (self.TILE_STROKE, self.TILE_FILL)
 
     @property
     def is_shade(self):
+        """Check if the render style is related to shading."""
         return self == self.SHADE_FILL
 
     @classmethod
     def coerce(cls, value):
+        """Convert certain string values for compatibility."""
         if not value:
             return cls.D
         if value == "FD":
