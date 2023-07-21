@@ -1167,6 +1167,7 @@ class GraphicsStyle:
         self.stroke_miter_limit = self.INHERIT
         self.stroke_dash_pattern = self.INHERIT
         self.stroke_dash_phase = self.INHERIT
+        self.color = self.INHERIT
         self.pattern = self.INHERIT
         
 
@@ -3281,6 +3282,15 @@ class PaintedPath:
         return copied
 
     @property
+    def pattern(self):
+        """Pattern applied to fill or stroke this path."""
+        return self.style.pattern
+
+    @pattern.setter
+    def pattern(self, new_pattern):
+        self.style.pattern = new_pattern
+
+    @property
     def style(self):
         """The `GraphicsStyle` applied to all elements of this path."""
         return self._root_graphics_context.style
@@ -3848,7 +3858,17 @@ class ClippingPath(PaintedPath):
     def __init__(self, x=0, y=0):
         super().__init__(x=x, y=y)
         self.paint_rule = PathPaintRule.DONT_PAINT
+        self._pattern = None
 
+    @property
+    def pattern(self):
+        """Pattern applied to fill or stroke this path."""
+        return self._pattern
+
+    @pattern.setter
+    def pattern(self, new_pattern):
+        self._pattern = new_pattern
+        
     def render(
         self, gsd_registry, style, last_item, initial_point, debug_stream=None, pfx=None
     ):
