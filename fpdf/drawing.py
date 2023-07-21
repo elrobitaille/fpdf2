@@ -1052,6 +1052,18 @@ class Pattern:
         self.type = pattern_type
         self.data = data
 
+    def serialize(self):
+        if self.type == PatternType.TILING:
+            # convert the tiling pattern data to the desired format
+            # here's a simple placeholder:
+            return f"/PatternType 1 /TilingType {self.data}"
+        elif self.type == PatternType.SHADING:
+            # convert the shading pattern data to the desired format
+            # here's a simple placeholder:
+            return f"/PatternType 2 /ShadingType {self.data}"
+        else:
+            raise ValueError(f"Unsupported pattern type: {self.type}")
+
 class GraphicsStyle:
     """
     A class representing various style attributes that determine drawing appearance.
@@ -3101,6 +3113,16 @@ class DrawingContext:
 
     def __init__(self):
         self._subitems = []
+        self.pattern = None
+
+    def set_pattern(self, pattern: Pattern):
+        """
+        Set a pattern for this drawing context.
+
+        Args:
+            pattern (Pattern): The pattern to be set.
+        """
+        self.pattern = pattern
 
     def add_item(self, item, _copy=True):
         """
@@ -3140,27 +3162,15 @@ class DrawingContext:
 
         return render_list, style, last_item
 
+class DrawingContext:
+    def __init__(self):
+        self._subitems = []
+        self.pattern = None
+
+    def set_pattern(self, pattern):
+        self.pattern = pattern
+
     def render(self, gsd_registry, first_point, scale, height, starting_style):
-        """
-        Render the drawing context to PDF format.
-
-        Args:
-            gsd_registry (GraphicsStateDictRegistry): the parent document's graphics
-                state registry.
-            first_point (Point): the starting point to use if the first path element is
-                a relative element.
-            scale (Number): the scale factor to convert from PDF pt units into the
-                document's semantic units (e.g. mm or in).
-            height (Number): the page height. This is used to remap the coordinates to
-                be from the top-left corner of the page (matching fpdf's behavior)
-                instead of the PDF native behavior of bottom-left.
-            starting_style (GraphicsStyle): the base style for this drawing context,
-                derived from the document's current style defaults.
-
-        Returns:
-            A string composed of the PDF representation of all the paths and groups in
-            this context (an empty string is returned if there are no paths or groups)
-        """
         if not self._subitems:
             return ""
 
@@ -3175,50 +3185,25 @@ class DrawingContext:
             if rendered:
                 render_list.append(rendered)
 
-        # there was nothing to render: the only items are the start group and scale
-        # transform.
+        if self.pattern:
+            serialized_pattern = self.pattern.serialize()
+            render_list.append(serialized_pattern)
+
         if len(render_list) == 2:
             return ""
 
         style_dict_name = gsd_registry.register_style(style)
-
         if style_dict_name is not None:
             render_list.insert(2, f"{render_pdf_primitive(style_dict_name)} gs")
             render_list.insert(
-                3,
-                render_pdf_primitive(style.stroke_dash_pattern)
-                + f" {number_to_str(style.stroke_dash_phase)} d",
+                3, render_pdf_primitive(style.stroke_dash_pattern)
+                + f" {number_to_str(style.stroke_dash_phase)} d"
             )
 
         render_list.append("Q")
-
         return " ".join(render_list)
 
-    def render_debug(
-        self, gsd_registry, first_point, scale, height, starting_style, debug_stream
-    ):
-        """
-        Render the drawing context to PDF format.
-
-        Args:
-            gsd_registry (GraphicsStateDictRegistry): the parent document's graphics
-                state registry.
-            first_point (Point): the starting point to use if the first path element is
-                a relative element.
-            scale (Number): the scale factor to convert from PDF pt units into the
-                document's semantic units (e.g. mm or in).
-            height (Number): the page height. This is used to remap the coordinates to
-                be from the top-left corner of the page (matching fpdf's behavior)
-                instead of the PDF native behavior of bottom-left.
-            starting_style (GraphicsStyle): the base style for this drawing context,
-                derived from the document's current style defaults.
-            debug_stream (TextIO): a text stream to which a debug representation of the
-                drawing structure will be written.
-
-        Returns:
-            A string composed of the PDF representation of all the paths and groups in
-            this context (an empty string is returned if there are no paths or groups)
-        """
+    def render_debug(self, gsd_registry, first_point, scale, height, starting_style, debug_stream):
         render_list, style, last_item = self._setup_render_prereqs(
             starting_style, first_point, scale, height
         )
@@ -3240,26 +3225,25 @@ class DrawingContext:
             if rendered:
                 render_list.append(rendered)
 
-            # there was nothing to render: the only items are the start group and scale
-            # transform.
+            if self.pattern:
+                debug_stream.write(f"Pattern: {self.pattern.serialize()}\n")
+
             if len(render_list) == 2:
                 return ""
 
             style_dict_name = gsd_registry.register_style(style)
-
             if style_dict_name is not None:
                 render_list.insert(2, f"{render_pdf_primitive(style_dict_name)} gs")
                 render_list.insert(
-                    3,
-                    render_pdf_primitive(style.stroke_dash_pattern)
-                    + f" {number_to_str(style.stroke_dash_phase)} d",
+                    3, render_pdf_primitive(style.stroke_dash_pattern)
+                    + f" {number_to_str(style.stroke_dash_phase)} d"
                 )
 
             render_list.append("Q")
-
             return " ".join(render_list)
 
         return ""
+
 
 
 class PaintedPath:
@@ -3943,6 +3927,8 @@ class GraphicsContext:
         self._transform = None
         self._clipping_path = None
 
+        self.pattern = None 
+
     def __deepcopy__(self, memo):
         copied = self.__class__()
         copied.style = copy.deepcopy(self.style, memo)
@@ -4113,6 +4099,8 @@ class GraphicsContext:
                 )
 
             if debug_stream:
+                if self.style.pattern:
+                    debug_stream.write(pfx + " ├─ Pattern: " + str(self.style.pattern))
                 if self.clipping_path is not None:
                     debug_stream.write(pfx + " ├─ ")
                     rendered_cpath, _, __ = self.clipping_path.render_debug(
@@ -4154,6 +4142,10 @@ class GraphicsContext:
                     render_list.append(rendered)
 
             else:
+
+                if self.style.pattern:
+                    render_list.append(self.style.pattern.serialize())
+
                 if self.clipping_path is not None:
                     rendered_cpath, _, __ = self.clipping_path.render(
                         gsd_registry, merged_style, last_item, initial_point
