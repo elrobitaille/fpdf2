@@ -1048,19 +1048,24 @@ class PatternType(Enum):
     SHADING = "shading"
 
 class Pattern:
-    def __init__(self, pattern_type: PatternType, data):
+    def __init__(self, pattern_type: PatternType, **kwargs):
         self.type = pattern_type
-        self.data = data
+        if self.type == PatternType.TILING:
+            # For tiling, we might have image data or raw pattern data
+            self.tile_data = kwargs.get("tile_data", "")
+        elif self.type == PatternType.SHADING:
+            # For shading, we'll need gradient information
+            self.start_color = kwargs.get("start_color", "0 0 0")  # Default to black
+            self.end_color = kwargs.get("end_color", "1 1 1")     # Default to white
+            self.direction = kwargs.get("direction", 0)  
 
     def serialize(self):
         if self.type == PatternType.TILING:
-            # convert the tiling pattern data to the desired format
-            # here's a simple placeholder:
-            return f"/PatternType 1 /TilingType {self.data}"
+            # Convert tiling data to the desired PDF representation
+            return f"/PatternType 1 /TilingType {self.tile_data}"
         elif self.type == PatternType.SHADING:
-            # convert the shading pattern data to the desired format
-            # here's a simple placeholder:
-            return f"/PatternType 2 /ShadingType {self.data}"
+            # Convert shading data to the desired PDF representation
+            return f"/PatternType 2 /Shading << /Type /Shading /ShadingType 2 /ColorSpace /DeviceRGB /Coords [{self.start_color}, {self.end_color}] >>"
         else:
             raise ValueError(f"Unsupported pattern type: {self.type}")
 
