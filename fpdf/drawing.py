@@ -1042,6 +1042,15 @@ __pdoc__["Transform.e"] = False
 __pdoc__["Transform.f"] = False
 
 
+class PatternType(Enum):
+    TILING = "tiling"
+    SHADING = "shading"
+
+class Pattern:
+    def __init__(self, pattern_type: PatternType, data):
+        self.type = pattern_type
+        self.data = data
+
 class GraphicsStyle:
     """
     A class representing various style attributes that determine drawing appearance.
@@ -1138,6 +1147,8 @@ class GraphicsStyle:
         self.stroke_miter_limit = self.INHERIT
         self.stroke_dash_pattern = self.INHERIT
         self.stroke_dash_phase = self.INHERIT
+        self.pattern = self.INHERIT
+        
 
     def __deepcopy__(self, memo):
         copied = self.__class__()
@@ -1476,7 +1487,18 @@ class GraphicsStyle:
             rule = self.paint_rule
 
         return rule
+    
+    @property
+    def pattern(self):
+        """Pattern to be applied instead of a solid fill/stroke color."""
+        return self._pattern  # pylint: disable=no-member
 
+    @pattern.setter
+    def pattern(self, pattern: Pattern):
+        if not isinstance(pattern, Pattern) and pattern is not self.INHERIT:
+            raise TypeError(f"{pattern} is not a Pattern")
+        super().__setattr__("_pattern", pattern)
+    
 
 def _render_move(pt):
     return f"{pt.render()} m"
